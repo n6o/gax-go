@@ -1,78 +1,30 @@
-// Copyright 2016, Google Inc.
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-//     * Neither the name of Google Inc. nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 package gax
 
 import (
 	"math/rand"
 	"time"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 )
 
-// CallOption is an option used by Invoke to control behaviors of RPC calls.
-// CallOption works by modifying relevant fields of CallSettings.
 type CallOption interface {
-	// Resolve applies the option by modifying cs.
 	Resolve(cs *CallSettings)
 }
-
-// Retryer is used by Invoke to determine retry behavior.
 type Retryer interface {
-	// Retry reports whether a request should be retried and how long to pause before retrying
-	// if the previous attempt returned with err. Invoke never calls Retry with nil error.
 	Retry(err error) (pause time.Duration, shouldRetry bool)
 }
-
 type retryerOption func() Retryer
 
-func (o retryerOption) Resolve(s *CallSettings) {
+func (o retryerOption) gologoo__Resolve_08d1d454519b6352dccd24e63e19b547(s *CallSettings) {
 	s.Retry = o
 }
-
-// WithRetry sets CallSettings.Retry to fn.
-func WithRetry(fn func() Retryer) CallOption {
+func gologoo__WithRetry_08d1d454519b6352dccd24e63e19b547(fn func() Retryer) CallOption {
 	return retryerOption(fn)
 }
-
-// OnErrorFunc returns a Retryer that retries if and only if the previous attempt
-// returns an error that satisfies shouldRetry.
-//
-// Pause times between retries are specified by bo. bo is only used for its
-// parameters; each Retryer has its own copy.
-func OnErrorFunc(bo Backoff, shouldRetry func(err error) bool) Retryer {
-	return &errorRetryer{
-		shouldRetry: shouldRetry,
-		backoff:     bo,
-	}
+func gologoo__OnErrorFunc_08d1d454519b6352dccd24e63e19b547(bo Backoff, shouldRetry func(err error) bool) Retryer {
+	return &errorRetryer{shouldRetry: shouldRetry, backoff: bo}
 }
 
 type errorRetryer struct {
@@ -80,24 +32,14 @@ type errorRetryer struct {
 	shouldRetry func(err error) bool
 }
 
-func (r *errorRetryer) Retry(err error) (time.Duration, bool) {
+func (r *errorRetryer) gologoo__Retry_08d1d454519b6352dccd24e63e19b547(err error) (time.Duration, bool) {
 	if r.shouldRetry(err) {
 		return r.backoff.Pause(), true
 	}
-
 	return 0, false
 }
-
-// OnCodes returns a Retryer that retries if and only if
-// the previous attempt returns a GRPC error whose error code is stored in cc.
-// Pause times between retries are specified by bo.
-//
-// bo is only used for its parameters; each Retryer has its own copy.
-func OnCodes(cc []codes.Code, bo Backoff) Retryer {
-	return &boRetryer{
-		backoff: bo,
-		codes:   append([]codes.Code(nil), cc...),
-	}
+func gologoo__OnCodes_08d1d454519b6352dccd24e63e19b547(cc []codes.Code, bo Backoff) Retryer {
+	return &boRetryer{backoff: bo, codes: append([]codes.Code(nil), cc...)}
 }
 
 type boRetryer struct {
@@ -105,7 +47,7 @@ type boRetryer struct {
 	codes   []codes.Code
 }
 
-func (r *boRetryer) Retry(err error) (time.Duration, bool) {
+func (r *boRetryer) gologoo__Retry_08d1d454519b6352dccd24e63e19b547(err error) (time.Duration, bool) {
 	st, ok := status.FromError(err)
 	if !ok {
 		return 0, false
@@ -119,30 +61,14 @@ func (r *boRetryer) Retry(err error) (time.Duration, bool) {
 	return 0, false
 }
 
-// Backoff implements exponential backoff. The wait time between retries is a
-// random value between 0 and the "retry period" - the time between retries. The
-// retry period starts at Initial and increases by the factor of Multiplier
-// every retry, but is capped at Max.
-//
-// Note: MaxNumRetries / RPCDeadline is specifically not provided. These should
-// be built on top of Backoff.
 type Backoff struct {
-	// Initial is the initial value of the retry period, defaults to 1 second.
-	Initial time.Duration
-
-	// Max is the maximum value of the retry period, defaults to 30 seconds.
-	Max time.Duration
-
-	// Multiplier is the factor by which the retry period increases.
-	// It should be greater than 1 and defaults to 2.
+	Initial    time.Duration
+	Max        time.Duration
 	Multiplier float64
-
-	// cur is the current retry period.
-	cur time.Duration
+	cur        time.Duration
 }
 
-// Pause returns the next time.Duration that the caller should use to backoff.
-func (bo *Backoff) Pause() time.Duration {
+func (bo *Backoff) gologoo__Pause_08d1d454519b6352dccd24e63e19b547() time.Duration {
 	if bo.Initial == 0 {
 		bo.Initial = time.Second
 	}
@@ -155,10 +81,6 @@ func (bo *Backoff) Pause() time.Duration {
 	if bo.Multiplier < 1 {
 		bo.Multiplier = 2
 	}
-	// Select a duration between 1ns and the current max. It might seem
-	// counterintuitive to have so much jitter, but
-	// https://www.awsarchitectureblog.com/2015/03/backoff.html argues that
-	// that is the best strategy.
 	d := time.Duration(1 + rand.Int63n(int64(bo.cur)))
 	bo.cur = time.Duration(float64(bo.cur) * bo.Multiplier)
 	if bo.cur > bo.Max {
@@ -169,21 +91,87 @@ func (bo *Backoff) Pause() time.Duration {
 
 type grpcOpt []grpc.CallOption
 
-func (o grpcOpt) Resolve(s *CallSettings) {
+func (o grpcOpt) gologoo__Resolve_08d1d454519b6352dccd24e63e19b547(s *CallSettings) {
 	s.GRPC = o
 }
-
-// WithGRPCOptions allows passing gRPC call options during client creation.
-func WithGRPCOptions(opt ...grpc.CallOption) CallOption {
+func gologoo__WithGRPCOptions_08d1d454519b6352dccd24e63e19b547(opt ...grpc.CallOption) CallOption {
 	return grpcOpt(append([]grpc.CallOption(nil), opt...))
 }
 
-// CallSettings allow fine-grained control over how calls are made.
 type CallSettings struct {
-	// Retry returns a Retryer to be used to control retry logic of a method call.
-	// If Retry is nil or the returned Retryer is nil, the call will not be retried.
 	Retry func() Retryer
+	GRPC  []grpc.CallOption
+}
 
-	// CallOptions to be forwarded to GRPC.
-	GRPC []grpc.CallOption
+func (o retryerOption) Resolve(s *CallSettings) {
+	log.SetFlags(19)
+	log.Printf("📨 Call %s\n", "gologoo__Resolve_08d1d454519b6352dccd24e63e19b547")
+	log.Printf("Input : %v\n", s)
+	o.gologoo__Resolve_08d1d454519b6352dccd24e63e19b547(s)
+	log.Printf("🚚 Output: %v\n", "(none)")
+	return
+}
+func WithRetry(fn func() Retryer) CallOption {
+	log.SetFlags(19)
+	log.Printf("📨 Call %s\n", "gologoo__WithRetry_08d1d454519b6352dccd24e63e19b547")
+	log.Printf("Input : %v\n", fn)
+	r0 := gologoo__WithRetry_08d1d454519b6352dccd24e63e19b547(fn)
+	log.Printf("Output: %v\n", r0)
+	return r0
+}
+func OnErrorFunc(bo Backoff, shouldRetry func(err error) bool) Retryer {
+	log.SetFlags(19)
+	log.Printf("📨 Call %s\n", "gologoo__OnErrorFunc_08d1d454519b6352dccd24e63e19b547")
+	log.Printf("Input : %v %v\n", bo, shouldRetry)
+	r0 := gologoo__OnErrorFunc_08d1d454519b6352dccd24e63e19b547(bo, shouldRetry)
+	log.Printf("Output: %v\n", r0)
+	return r0
+}
+func (r *errorRetryer) Retry(err error) (time.Duration, bool) {
+	log.SetFlags(19)
+	log.Printf("📨 Call %s\n", "gologoo__Retry_08d1d454519b6352dccd24e63e19b547")
+	log.Printf("Input : %v\n", err)
+	r0, r1 := r.gologoo__Retry_08d1d454519b6352dccd24e63e19b547(err)
+	log.Printf("Output: %v %v\n", r0, r1)
+	return r0, r1
+}
+func OnCodes(cc []codes.Code, bo Backoff) Retryer {
+	log.SetFlags(19)
+	log.Printf("📨 Call %s\n", "gologoo__OnCodes_08d1d454519b6352dccd24e63e19b547")
+	log.Printf("Input : %v %v\n", cc, bo)
+	r0 := gologoo__OnCodes_08d1d454519b6352dccd24e63e19b547(cc, bo)
+	log.Printf("Output: %v\n", r0)
+	return r0
+}
+func (r *boRetryer) Retry(err error) (time.Duration, bool) {
+	log.SetFlags(19)
+	log.Printf("📨 Call %s\n", "gologoo__Retry_08d1d454519b6352dccd24e63e19b547")
+	log.Printf("Input : %v\n", err)
+	r0, r1 := r.gologoo__Retry_08d1d454519b6352dccd24e63e19b547(err)
+	log.Printf("Output: %v %v\n", r0, r1)
+	return r0, r1
+}
+func (bo *Backoff) Pause() time.Duration {
+	log.SetFlags(19)
+	log.Printf("📨 Call %s\n", "gologoo__Pause_08d1d454519b6352dccd24e63e19b547")
+	log.Printf("Input : (none)\n")
+	r0 := bo.gologoo__Pause_08d1d454519b6352dccd24e63e19b547()
+	log.Printf("Output: %v\n", r0)
+	return r0
+}
+func (o grpcOpt) Resolve(s *CallSettings) {
+	log.SetFlags(19)
+	log.Printf("📨 Call %s\n", "gologoo__Resolve_08d1d454519b6352dccd24e63e19b547")
+	log.Printf("Input : %v\n", s)
+	o.gologoo__Resolve_08d1d454519b6352dccd24e63e19b547(s)
+	log.Printf("🚚 Output: %v\n", "(none)")
+	return
+}
+func WithGRPCOptions(opt ...grpc.CallOption) CallOption {
+	log.SetFlags(19)
+	log.Printf("📨 Call %s\n", "gologoo__WithGRPCOptions_08d1d454519b6352dccd24e63e19b547")
+	log.Printf("Input : %v\n", opt)
+	r0 := gologoo__WithGRPCOptions_08d1d454519b6352dccd24e63e19b547(opt...)
+	log.Printf("Output: %v\n", r0)
+	return r0
 }
